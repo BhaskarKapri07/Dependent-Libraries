@@ -1,89 +1,43 @@
 import os
+from pathlib import Path
+from src.dependency_resolver import parse_file, find_all_dependencies
 
-def parse_file(filepath):
-    dependencies = {}
-    library_order = []
+
+def process_test_files():
+    test_data_dir = os.path.join('tests', 'test_data')
+
+    if not os.path.exists(test_data_dir):   
+        print(f"Error: Test data directory not found: {test_data_dir}")
+        return
     
-    filepath = os.path.normpath(filepath)
+    test_files = [f for f in os.listdir(test_data_dir) if f.endswith('.txt')]
 
-    if not os.path.isfile(filepath):
-        raise FileNotFoundError(f"Input file not found: {filepath}")
+    if not test_files:
+        print(f"Error: No .txt files found in : {test_data_dir}")
+        return
+    
+
+    for filename in sorted(test_files):
+        filepath = os.path.join(test_data_dir, filename)
+        try:
+            print(f"Processing: {filename}")
+            print("----------------------------------")
+
+            deps, order = parse_file(filepath)
+            for lib in order:
+                all_deps = find_all_dependencies(lib, deps)
+                deps_str = " ".join(sorted(all_deps)) if all_deps else "no dependencies"
+                print(f"{lib} depends on {deps_str}")
+
+        except (FileNotFoundError, ValueError) as e:
+            print(f"Error: {str(e)}")
         
-    with open(filepath, 'r') as file:
-        for line_num, line in enumerate(file,1):
-            if not line.strip():
-                continue
-
-            try:
-                parts = line.strip().split('depends on')
-                if len(parts) != 2:
-                    raise ValueError(f"Line {line_num}: Missing 'depends on' separator") 
-
-                library = parts[0].strip()
-                if not library:
-                    raise ValueError(f"Line {line_num}: Empty library name")
-
-                if library not in dependencies:
-                    library_order.append(library)
+        print("---------------\n\n")
 
 
-                deps = []
-                for dep in parts[1].strip().split():
-                    if dep and dep not in deps:  
-                        deps.append(dep)
-
-                dependencies[library] = deps
-
-            except ValueError as e:
-                raise ValueError(f"Error in {filepath}, {str(e)}")
-
-    return dependencies, library_order
+def main():
+    process_test_files()
 
 
-
-def find_all_dependencies(library, dependencies):
-    # print("----INSIDE FIND ALL DEPENDENCIES")
-    # print(f"\nLibrary: {library}")
-    # print(f"\nDependencies: {dependencies}")
-
-    if library not in dependencies:
-        return set()
-
-    all_deps = set()
-    stack = [library]
-    visited = set()
-
-
-    while stack:
-        current_lib = stack.pop()
-        # print(f"\nCurrent Library: {current_lib}")
-
-        if current_lib not in dependencies:
-            continue
-
-        for dep in dependencies[current_lib]:
-            # print(f"\nDependency: {dep}")
-            if dep not in visited:
-                visited.add(dep)
-                stack.append(dep)
-
-
-            if dep != library:
-                all_deps.add(dep)
-    
-    return all_deps
-
-
-test_files = ["INPUT1.txt", "INPUT2.txt", "INPUT3.txt"]
-for file in test_files:
-    try:
-        print(f"Processing: {file}")
-        deps, order = parse_file(file)
-        for lib in order:
-            all_deps = find_all_dependencies(lib, deps)
-            deps_str = " ".join(sorted(all_deps)) if all_deps else "no dependencies"
-            print(f"{lib} depends on {deps_str}")
-
-    except (FileNotFoundError, ValueError) as e:
-        print(f"Error: {str(e)}")
-    print("\n---------------------------\n")
+if __name__ == "__main__":
+    main()
