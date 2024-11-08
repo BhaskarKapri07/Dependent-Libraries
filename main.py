@@ -1,43 +1,29 @@
-import os
-from pathlib import Path
+import sys
 from src.dependency_resolver import parse_file, find_all_dependencies
 
+def process_file(filepath):
+    try:
+        deps, order = parse_file(filepath)
+        for lib in order:
+            all_deps = find_all_dependencies(lib, deps)
+            deps_str = " ".join(all_deps) if all_deps else "no dependencies"
+            print(f"{lib} depends on {deps_str}")
 
-def process_test_files():
-    test_data_dir = os.path.join('tests', 'test_data')
-
-    if not os.path.exists(test_data_dir):   
-        print(f"Error: Test data directory not found: {test_data_dir}")
-        return
-    
-    test_files = [f for f in os.listdir(test_data_dir) if f.endswith('.txt')]
-
-    if not test_files:
-        print(f"Error: No .txt files found in : {test_data_dir}")
-        return
-    
-
-    for filename in sorted(test_files):
-        filepath = os.path.join(test_data_dir, filename)
-        try:
-            print(f"Processing: {filename}")
-            print("----------------------------------")
-
-            deps, order = parse_file(filepath)
-            for lib in order:
-                all_deps = find_all_dependencies(lib, deps)
-                deps_str = " ".join(sorted(all_deps)) if all_deps else "no dependencies"
-                print(f"{lib} depends on {deps_str}")
-
-        except (FileNotFoundError, ValueError) as e:
-            print(f"Error: {str(e)}")
-        
-        print("---------------\n\n")
-
+    except (FileNotFoundError, ValueError) as e:
+        print(f"Error: {str(e)}")
+        sys.exit(1)  
 
 def main():
-    process_test_files()
-
+    # Check if input file is provided
+    if len(sys.argv) != 2:
+        print("Usage: python main.py <input_file>")
+        print("Example: python main.py input.txt")
+        sys.exit(1)
+    
+    input_file = sys.argv[1]
+    print(f"\nProcessing: {input_file}")
+    print("-" * 50)
+    process_file(input_file)
 
 if __name__ == "__main__":
     main()
