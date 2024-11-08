@@ -1,0 +1,4 @@
+A depends on B C
+A depends on D E
+B depends on C
+B depends on C D

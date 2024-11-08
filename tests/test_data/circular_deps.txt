@@ -1,0 +1,6 @@
+A depends on B
+B depends on C
+C depends on A
+
+X depends on Y
+Y depends on X

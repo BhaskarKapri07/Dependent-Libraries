@@ -1,0 +1,4 @@
+A depends on B@C
+$X depends on Y
+A! depends on B C
+Y depends on Z#
