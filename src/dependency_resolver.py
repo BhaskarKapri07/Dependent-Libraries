@@ -6,8 +6,14 @@ def parse_file(filepath):
     
     filepath = os.path.normpath(filepath)
 
+    # if fild does not exist
     if not os.path.isfile(filepath):
         raise FileNotFoundError(f"Input file not found: {filepath}")
+    
+    # if file is empty
+    if os.path.getsize(filepath) == 0:
+        return {}, []
+
         
     with open(filepath, 'r') as file:
         for line_num, line in enumerate(file,1):
@@ -15,27 +21,49 @@ def parse_file(filepath):
                 continue
 
             try:
-                parts = line.strip().split('depends on')
+                # normalize multiple spaces
+                normalized_line = ' '.join(line.split())
+            
+                # checking basic formatting
+                if 'depends on' not in normalized_line:
+                    raise ValueError(f"Line {line_num}: Missing 'depends on' separator")
+
+                parts = normalized_line.strip().split('depends on')
                 if len(parts) != 2:
-                    raise ValueError(f"Line {line_num}: Missing 'depends on' separator") 
+                    raise ValueError(f"Line {line_num}: Line must have exactly one 'depends on' separator") 
 
                 library = parts[0].strip()
                 if not library:
-                    raise ValueError(f"Line {line_num}: Empty library name")
+                    raise ValueError(f"Line {line_num}: Library name cannot be empty")
+                if not library.isalnum():
+                    raise ValueError(f"Line {line_num}: {library} name must be alphanumeric")
 
-                if library not in dependencies:
-                    library_order.append(library)
 
 
                 deps = []
                 for dep in parts[1].strip().split():
+                    # skip empty dependencies
+                    if not dep:
+                        continue
+
+                    # check dependency name
+                    if not dep.isalnum():
+                        raise ValueError(f"Line {line_num}: Dependency {dep} name must be alphanumeric")
+                    
+                    # check self dependency
+                    if dep == library:
+                        raise ValueError(f"Line {line_num}: Self dependency not allowed. '{library}' cannot depend on itself")
+
                     if dep and dep not in deps:  
                         deps.append(dep)
 
+                if library not in dependencies:
+                    library_order.append(library)
+                
                 dependencies[library] = deps
 
             except ValueError as e:
-                raise ValueError(f"Error in {filepath}, {str(e)}")
+                raise ValueError(f"Error in {filepath}, Line {line_num}: {str(e)}")
 
     return dependencies, library_order
 
@@ -72,4 +100,5 @@ def find_all_dependencies(library, dependencies):
                 all_deps.add(dep)
     
     return all_deps
+
 
