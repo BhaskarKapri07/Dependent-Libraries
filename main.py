@@ -2,8 +2,20 @@ import sys
 from src.dependency_resolver import parse_file, find_all_dependencies
 
 def process_file(filepath):
+    """
+    Process a single dependency file and print the complete dependency tree.
+    
+    Args:
+        filepath (str): Path to the input file
+
+    Returns:
+        None
+    """
     try:
+        # Parse file and get dependencies
         deps, order = parse_file(filepath)
+
+        # Process and print dependencies for each library
         for lib in order:
             all_deps = find_all_dependencies(lib, deps)
             deps_str = " ".join(all_deps) if all_deps else "no dependencies"

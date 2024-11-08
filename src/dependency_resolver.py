@@ -1,6 +1,17 @@
 import os
 
 def parse_file(filepath):
+    """
+    Parse a dependency file and return dependencies and their order.
+    
+    Args:
+        filepath (str): Path to the input file.
+        
+    Returns:
+        tuple: (dependencies, library_order)
+            - dependencies (dict): Dictionary mapping libraries to their dependencies
+            - library_order (list): List of libraries in order of appearance
+    """
     dependencies = {}
     library_order = []
     
@@ -17,6 +28,7 @@ def parse_file(filepath):
         
     with open(filepath, 'r') as file:
         for line_num, line in enumerate(file,1):
+            # Skip empty lines or lines with only whitespace
             if not line.strip():
                 continue
 
@@ -32,6 +44,7 @@ def parse_file(filepath):
                 if len(parts) != 2:
                     raise ValueError(f"Line {line_num}: Line must have exactly one 'depends on' separator") 
 
+                # Validate library name
                 library = parts[0].strip()
                 if not library:
                     raise ValueError(f"Line {line_num}: Library name cannot be empty")
@@ -39,7 +52,7 @@ def parse_file(filepath):
                     raise ValueError(f"Line {line_num}: {library} name must be alphanumeric")
 
 
-
+                # Parse and validate dependencies
                 deps = []
                 for dep in parts[1].strip().split():
                     # skip empty dependencies
@@ -54,12 +67,15 @@ def parse_file(filepath):
                     if dep == library:
                         raise ValueError(f"Line {line_num}: Self dependency not allowed. '{library}' cannot depend on itself")
 
+                    # Add dependency if not already present
                     if dep and dep not in deps:  
                         deps.append(dep)
 
+                # Add library to order if first appearance
                 if library not in dependencies:
                     library_order.append(library)
                 
+                # Store dependencies
                 dependencies[library] = deps
 
             except ValueError as e:
@@ -70,32 +86,37 @@ def parse_file(filepath):
 
 
 def find_all_dependencies(library, dependencies):
-    # print("----INSIDE FIND ALL DEPENDENCIES")
-    # print(f"\nLibrary: {library}")
-    # print(f"\nDependencies: {dependencies}")
+    """
+    Find all dependencies (direct + transitive) for a given library.
+    
+    Args:
+        library (str): The library to find dependencies for
+        dependencies (dict): Dictionary of direct dependencies
+        
+    Returns:
+        set: Complete set of all dependencies for the given library
+    """
 
     if library not in dependencies:
         return set()
 
-    all_deps = set()
-    stack = [library]
-    visited = set()
-
+    all_deps = set()    # To store all dependencies
+    stack = [library]   # Stack of libraries to process
+    visited = set()     # To track visited libraries
 
     while stack:
         current_lib = stack.pop()
-        # print(f"\nCurrent Library: {current_lib}")
 
         if current_lib not in dependencies:
             continue
 
+        # Process each direct dependency of current library
         for dep in dependencies[current_lib]:
-            # print(f"\nDependency: {dep}")
             if dep not in visited:
                 visited.add(dep)
                 stack.append(dep)
 
-
+            # Add to final dependencies if not the original library
             if dep != library:
                 all_deps.add(dep)
     
